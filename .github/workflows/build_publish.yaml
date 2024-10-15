@@ -1,0 +1,79 @@
+#
+name: Create and publish a Docker image
+
+# Triggers the workflow when a pull request targeting the 'main' branch is created or synchronized.
+on:
+  pull_request:
+    branches: ['main']
+    types:
+      - opened       # Trigger when a pull request is opened.
+      - synchronize  # Trigger when commits are added or removed from the PR.
+
+# Define environment variables used across the workflow.
+env:
+  REGISTRY: ghcr.io                        # The container registry domain (GitHub Container Registry).
+  IMAGE_NAME: ${{ github.repository }}     # Name of the image being built, based on the repository name.
+
+# Defines the single job for building and pushing the Docker image.
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest                # This job will run on the latest available Ubuntu runner.
+
+    # Permissions for the GitHub token that the workflow uses to interact with repository contents and GitHub packages.
+    permissions:
+      contents: read                      # Read access to the repository contents.
+      packages: write                     # Write access to publish the Docker image to the registry.
+      attestations: write                 # Permission for signing artifacts (if required).
+      id-token: write                     # Token needed for OIDC authentication (for future use if needed).
+
+    # Step-by-step actions for the job.
+    steps:
+      # Step 1: Checkout the current branch of the repository.
+      - name: Checkout repository
+        uses: actions/checkout@v4          # Uses the latest version of the checkout action to pull the repository code.
+
+      # Step 2: Capture the commit SHA from the pull request head (latest commit in the PR branch).
+      - name: Set SHA
+        id: git_sha                        # Set an ID to reference this step's output in future steps.
+        run: |
+          echo "gitsha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+        # This outputs the current commit SHA to the GITHUB_OUTPUT, which is used later for image tagging.
+
+      # Step 3: Log in to GitHub Container Registry using the GitHub Actions-provided token.
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}    # Container registry (ghcr.io).
+          username: ${{ github.actor }}    # The GitHub user triggering the workflow (i.e., the PR creator).
+          password: ${{ secrets.GITHUB_TOKEN }}  # Token provided by GitHub Actions to authenticate to the registry.
+
+      # Step 4: Set up Docker Buildx, a CLI tool for advanced multi-platform builds.
+      - name: Set up Docker Buildx
+        id: buildx                         # Assign an ID to reference this step's output.
+        uses: docker/setup-buildx-action@v3
+
+      # Step 5: Cache Docker build layers to speed up the build process.
+      - name: APP::Cache Docker layers
+        uses: actions/cache@v4             # Leverage the cache action to persist and reuse Docker layers.
+        with:
+          path: /tmp/.buildx-cache-app     # Cache location for Docker build layers.
+          key: ${{ runner.os }}-buildx-app-${{ steps.git_sha.outputs.gitsha }} # Unique key based on OS and commit SHA.
+          restore-keys: |
+            ${{ runner.os }}-buildx-app-   # Restore cache with similar keys if an exact match is unavailable.
+
+      # Step 6: Build and push the Docker image to the GitHub Container Registry.
+      - name: APP::Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          file: ./docker/Dockerfile         # Path to the Dockerfile used for building the image.
+          builder: ${{ steps.buildx.outputs.name }}  # Reference the Buildx builder set up in a previous step.
+          push: true                        # Automatically push the image to the registry after a successful build.
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_sha.outputs.gitsha }}  # Tag the image with the SHA.
+          cache-from: type=local,src=/tmp/.buildx-cache-app  # Reuse cached layers from previous builds.
+          cache-to: type=local,dest=/tmp/.buildx-cache-app-new,mode=max  # Save new cache layers after the build.
+
+      # Step 7: Move the newly generated cache to the main cache directory for future reuse.
+      - name: APP::Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-app         # Remove the old cache.
+          mv /tmp/.buildx-cache-app-new /tmp/.buildx-cache-app  # Move the new cache to replace the old cache.
