@@ -85,3 +85,15 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache-app         # Remove the old cache.
           mv /tmp/.buildx-cache-app-new /tmp/.buildx-cache-app  # Move the new cache to replace the old cache.
+
+      # Step 8: Conditional cache clearing on merge into 'main'.
+      - name: Clear branch cache after merge
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # List caches for the PR branch
+          CACHES=$(gh actions-cache list --branch refs/pull/${{ github.event.pull_request.number }}/merge --limit 100 | awk '{print $1}')
+          
+          # Delete the caches
+          for cache in $CACHES; do
+            gh actions-cache delete $cache --confirm
+          done
