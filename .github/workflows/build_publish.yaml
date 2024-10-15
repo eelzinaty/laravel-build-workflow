@@ -90,6 +90,9 @@ jobs:
       - name: Clear branch cache after merge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
+          # Install gh-actions-cache extension
+          gh extension install actions/gh-actions-cache
+
           # List caches for the PR branch
           CACHES=$(gh actions-cache list --branch refs/pull/${{ github.event.pull_request.number }}/merge --limit 100 | awk '{print $1}')
           
