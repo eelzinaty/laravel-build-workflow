@@ -8,5 +8,4 @@ Route::get('/', function () {
 
     // Pass the README content to the landing page view
     return view('welcome', ['readmeContent' => nl2br($readmeContent)]);
-    
 });
