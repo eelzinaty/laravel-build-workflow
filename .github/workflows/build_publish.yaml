@@ -39,6 +39,24 @@ jobs:
           echo "gitsha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
         # This outputs the current commit SHA to the GITHUB_OUTPUT, which is used later for image tagging.
 
+      - name: Get the one before last commit in the PR
+        id: commit_info
+        run: |
+          # Get the last two commits in the PR branch
+          PR_COMMITS=$(git log --pretty=format:"%H" -n 2 ${{ github.event.pull_request.head.sha }})
+
+          # Get the SHA for the one before last commit
+          BEFORE_LAST_COMMIT=$(echo "$PR_COMMITS" | tail -n 1)
+
+          # Check if we have less than two commits
+          if [ -z "$BEFORE_LAST_COMMIT" ]; then
+            # Fall back to the last commit in the main branch if there is no second commit
+            BEFORE_LAST_COMMIT=$(git log origin/main -1 --pretty=format:"%H")
+          fi
+
+          echo "The commit to use is: $BEFORE_LAST_COMMIT"
+          echo "commit_sha=$BEFORE_LAST_COMMIT" >> $GITHUB_OUTPUT
+
       # Step 3: Log in to GitHub Container Registry using the GitHub Actions-provided token.
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
@@ -59,6 +77,7 @@ jobs:
           path: /tmp/.buildx-cache-app     # Cache location for Docker build layers.
           key: ${{ runner.os }}-buildx-app-${{ steps.git_sha.outputs.gitsha }} # Unique key based on OS and commit SHA.
           restore-keys: |
+            ${{ runner.os }}-buildx-app-${{ steps.commit_info.outputs.commit_sha }}
             ${{ runner.os }}-buildx-app-   # Restore cache with similar keys if an exact match is unavailable.
 
       # Step 6: Build and push the Docker image to the GitHub Container Registry.
