@@ -89,6 +89,8 @@ jobs:
       # Step 8: Conditional cache clearing on merge into 'main'.
       - name: Clear branch cache after merge
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Install gh-actions-cache extension
           gh extension install actions/gh-actions-cache
