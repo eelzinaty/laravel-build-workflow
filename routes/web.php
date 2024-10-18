@@ -7,5 +7,5 @@ Route::get('/', function () {
     $readmeContent = File::get(base_path('README.md'));
 
     // Pass the README content to the landing page view
-    return view('welcome', ['readmeContent' => nl2br($readmeContent)]);
+    return view('welcome with super caching', ['readmeContent' => nl2br($readmeContent)]);
 });
