@@ -3,7 +3,7 @@
 
 This repository demonstrates how to enhance developer experience by significantly reducing Docker image build times—up to **90% faster**—using GitHub Actions Cache and applying Docker best practices. The sample project is a PHP Laravel 11 application configured with optimised workflows and Docker setups.
 
-This repository complements the article [Enhancing Developer Experience: Accelerating Docker Image Builds by 90% Using GitHub Actions Cache](#), providing practical examples of the concepts discussed.
+This repository complements the article [Enhancing Developer Experience: Accelerating Docker Image Builds by 90% Using GitHub Actions Cache](https://medium.com/@eelzinaty/enhancing-developer-experience-accelerating-docker-image-builds-by-90-using-github-actions-cache-839acf09196c), providing practical examples of the concepts discussed.
 
 
 ## Table of Contents
@@ -188,6 +188,6 @@ node_modules/
 
 ---
 
-By exploring this repository, you can see practical implementations of the techniques discussed in the article [Enhancing Developer Experience: Accelerating Docker Image Builds by 90% Using GitHub Actions Cache](#). Feel free to use this as a reference for optimising your own projects.
+By exploring this repository, you can see practical implementations of the techniques discussed in the article [Enhancing Developer Experience: Accelerating Docker Image Builds by 90% Using GitHub Actions Cache](https://medium.com/@eelzinaty/enhancing-developer-experience-accelerating-docker-image-builds-by-90-using-github-actions-cache-839acf09196c). Feel free to use this as a reference for optimising your own projects.
 
 **Happy coding!**
