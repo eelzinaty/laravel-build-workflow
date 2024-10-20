@@ -1,27 +1,19 @@
-#
-name: Create and publish a Docker image
+name: Scheduled Build and Caching Workflow 🚀
 
-# Triggers the workflow for both pull request events and merge into 'main'.
 on:
-  pull_request:
-    branches:
-      - main  # Trigger when a pull request targets the 'main' branch.
-    types:
-      - opened         # Trigger when a pull request is opened.
-      - synchronize    # Trigger when commits are added or updated in the PR.
-  push:
-    branches:
-      - main  # Trigger when a push (merge) happens on the 'main' branch.
+  schedule:
+    # This cron job runs at 00:00 AM UTC every day
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual run'
 
-# Define environment variables used across the workflow.
-env:
-  REGISTRY: ghcr.io                        # The container registry domain (GitHub Container Registry).
-  IMAGE_NAME: ${{ github.repository }}     # Name of the image being built, based on the repository name.
-
-# Defines the job for building and pushing the Docker image.
 jobs:
-  build-and-push-image:
-    name: 'Build and Push docker images'
+  build-cache-images:
+    name: 'Build and Cache docker images'
     runs-on: ubuntu-latest                # This job will run on the latest available Ubuntu runner.
 
     # Permissions for the GitHub token that the workflow uses to interact with repository contents and GitHub packages.
@@ -40,13 +32,8 @@ jobs:
       - name: Set SHA
         id: git_sha
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # Use the PR head commit SHA if the event is a pull request.
-            echo "gitsha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-          else
             # Use the latest commit SHA (merge commit) if the event is a push to main.
             echo "gitsha=${{ github.sha }}" >> $GITHUB_OUTPUT
-          fi
 
       # Step 3: Log in to GitHub Container Registry using the GitHub Actions-provided token.
       - name: Log in to the Container registry
@@ -70,13 +57,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-app-
 
-      # Step 6: Build and push the Docker image to the GitHub Container Registry.
+      # Step 6: Build the Docker image to be cached for future use.
       - name: APP::Build Docker image
         uses: docker/build-push-action@v6
         with:
           file: ./docker/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
-          push: true
+          push: false  # No need to push the image, we just need this to create the cache.
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_sha.outputs.gitsha }}
           cache-from: type=local,src=/tmp/.buildx-cache-app  # Reuse cached layers from previous builds.
           cache-to: type=local,dest=/tmp/.buildx-cache-app-new,mode=max  # Save new cache layers after the build.
