@@ -11,6 +11,11 @@ on:
         required: false
         default: 'Manual run'
 
+# Define environment variables used across the workflow.
+env:
+  REGISTRY: ghcr.io                        # The container registry domain (GitHub Container Registry).
+  IMAGE_NAME: ${{ github.repository }}     # Name of the image being built, based on the repository name.
+
 jobs:
   build-cache-images:
     name: 'Build and Cache docker images'
